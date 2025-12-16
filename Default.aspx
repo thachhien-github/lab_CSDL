@@ -6,9 +6,7 @@
 <head runat="server">
     <title>Demo Quản Lý Nhân Viên</title>
     <style type="text/css">
-        /* ✨ BẮT ĐẦU CSS ĐÃ CẢI THIỆN VÀ HIỆN ĐẠI ✨ */
 
-        /* Định nghĩa các biến CSS (Custom Properties) */
         :root {
             --primary-color: #007bff; /* Xanh dương cho tiêu đề, nút */
             --secondary-color: #6c757d; /* Màu xám cho chữ phụ */

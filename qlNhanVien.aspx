@@ -5,7 +5,6 @@
 <head runat="server">
     <title>Danh Sách Nhân Viên</title>
     <style type="text/css">
-        /* ✨ CSS ĐỂ PHÙ HỢP VỚI GIAO DIỆN TRONG HÌNH ✨ */
 
         :root {
             --primary-color: #3498db; /* Xanh dương */
@@ -13,6 +12,8 @@
             --border-color: #ddd;
             --button-bg: #e9e9e9;
             --hover-bg: #f5f5ff;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
         }
 
         body {
@@ -78,7 +79,7 @@
         }
         
         /* Căn trái cho Tên nhân viên */
-        .gv-style td:nth-child(3), .gv-style td:nth-child(4) { 
+        .gv-style td:nth-child(2), .gv-style td:nth-child(3), .gv-style td:nth-child(6) { 
             text-align: left;
         }
 
@@ -104,6 +105,7 @@
             font-size: 0.85em;
             transition: background-color 0.2s;
             background-color: var(--button-bg);
+            margin: 0 2px;
         }
 
         .gv-style input[type="submit"]:hover {
@@ -118,76 +120,253 @@
         .link-quay-lai a {
             text-decoration: none;
             color: var(--primary-color);
+            font-weight: bold;
         }
         
         .link-quay-lai a:hover {
             text-decoration: underline;
         }
+
+        /* Định dạng form thêm nhân viên */
+        .add-employee-form {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .add-employee-form h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.2em;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap; /* Cho phép xuống dòng trên màn hình nhỏ */
+        }
+
+        .form-group label {
+            width: 150px; /* Chiều rộng cố định cho nhãn */
+            font-weight: bold;
+            color: #555;
+            flex-shrink: 0;
+        }
+
+        .form-group input[type="text"], 
+        .form-group input[type="date"],
+        .form-group select {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            max-width: 300px; /* Giới hạn chiều rộng input */
+        }
+        
+        .form-group input[type="checkbox"] {
+            margin-left: 0;
+            margin-right: 5px;
+        }
+
+        .add-employee-form .btn-container {
+            text-align: right;
+            margin-top: 15px;
+        }
+
+        .add-employee-form .btn-container input[type="submit"] {
+            padding: 8px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        .add-employee-form .btn-container input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        
+        /* Message Box */
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
     </style>
+    <script type="text/javascript">
+        // Hàm xác nhận trước khi xóa
+        function ConfirmDelete() {
+            return confirm("Bạn có chắc chắn muốn xóa nhân viên này không?");
+        }
+    </script>
 </head>
 <body>
-    <form id="form1" runat="server">
-        <asp:SqlDataSource ID="DataqlNhanVien" runat="server" 
-            ConnectionString="<%$ ConnectionStrings:QLNhanVienConnectionString %>" 
-            ProviderName="<%$ ConnectionStrings:QLNhanVienConnectionString.ProviderName %>" 
-            SelectCommand="SELECT MaNV, HoNV, TenNV, Phai, NgaySinh, NoiSinh, MaPhong FROM NhanVien"
-            
-            DeleteCommand="DELETE FROM NhanVien WHERE MaNV = @MaNV"
-            UpdateCommand="UPDATE NhanVien SET HoNV = @HoNV, TenNV = @TenNV, Phai = @Phai, NgaySinh = @NgaySinh, NoiSinh = @NoiSinh, MaPhong = @MaPhong WHERE MaNV = @MaNV">
-            
-            <DeleteParameters>
-                <asp:Parameter Name="MaNV" Type="Int32" />
-            </DeleteParameters>
-            <UpdateParameters>
-                <asp:Parameter Name="HoNV" Type="String" />
-                <asp:Parameter Name="TenNV" Type="String" />
-                <asp:Parameter Name="Phai" Type="Boolean" />
-                <asp:Parameter Name="NgaySinh" Type="DateTime" />
-                <asp:Parameter Name="NoiSinh" Type="String" />
-                <asp:Parameter Name="MaPhong" Type="Int32" />
-                <asp:Parameter Name="MaNV" Type="Int32" /> 
-            </UpdateParameters>
-            
-        </asp:SqlDataSource>
-        
-        <div>
-            <h1>DANH SÁCH NHÂN VIÊN</h1>
-            <hr />
-            
-            <asp:GridView ID="GridView1" runat="server"
-                DataSourceID="DataqlNhanVien"
-                AutoGenerateColumns="False" 
-                CssClass="gv-style"
-                DataKeyNames="MaNV"
-                AllowPaging="True" 
-                
-                OnRowDeleting="GridView1_RowDeleting"
-                OnRowEditing="GridView1_RowEditing"
-                OnRowCancelingEdit="GridView1_RowCancelingEdit"
-                OnRowUpdating="GridView1_RowUpdating" > 
-                
-                <Columns>
-                    <asp:BoundField DataField="MaNV" HeaderText="Mã nhân viên" SortExpression="MaNV" ReadOnly="True" ItemStyle-Width="80px" />
-                    <asp:BoundField DataField="HoNV" HeaderText="Họ nhân viên" SortExpression="HoNV" />
-                    <asp:BoundField DataField="TenNV" HeaderText="Tên nhân viên" SortExpression="TenNV" />
-                    
-                    <asp:CheckBoxField DataField="Phai" HeaderText="Phái" ItemStyle-Width="50px" />
-                    
-                    <asp:BoundField DataField="NgaySinh" HeaderText="Ngày sinh" SortExpression="NgaySinh" DataFormatString="{0:dd/MM/yyyy}" />
-                    
-                    <asp:BoundField DataField="NoiSinh" HeaderText="Nơi sinh" SortExpression="NoiSinh" />
-                    <asp:BoundField DataField="MaPhong" HeaderText="Mã phòng" SortExpression="MaPhong" ItemStyle-Width="80px" />
-                    
-                    <asp:CommandField ShowEditButton="True" HeaderText=" " ButtonType="Button" EditText="Edit" UpdateText="Update" CancelText="Cancel" />
-                    
-                    <asp:CommandField ShowDeleteButton="True" HeaderText=" " ButtonType="Button" DeleteText="Delete" />
-                </Columns>
-            </asp:GridView>
+<form id="form1" runat="server">
 
-            <div class="link-quay-lai">
-                <a href="Default.aspx">Quay lại</a>
-            </div>
+    <!-- DATA -->
+    <asp:SqlDataSource ID="DataqlNhanVien" runat="server"
+        ConnectionString="<%$ ConnectionStrings:QLNhanVienConnectionString %>"
+        SelectCommand="SELECT MaNV, HoNV, TenNV, Phai, NgaySinh, NoiSinh, MaPhong FROM NhanVien"
+        InsertCommand="INSERT INTO NhanVien(HoNV,TenNV,Phai,NgaySinh,NoiSinh,MaPhong)
+                       VALUES(@HoNV,@TenNV,@Phai,@NgaySinh,@NoiSinh,@MaPhong)"
+        UpdateCommand="UPDATE NhanVien SET
+                       HoNV=@HoNV, TenNV=@TenNV, Phai=@Phai,
+                       NgaySinh=@NgaySinh, NoiSinh=@NoiSinh, MaPhong=@MaPhong
+                       WHERE MaNV=@MaNV"
+        DeleteCommand="DELETE FROM NhanVien WHERE MaNV=@MaNV">
+
+        <InsertParameters>
+            <asp:Parameter Name="HoNV" />
+            <asp:Parameter Name="TenNV" />
+            <asp:Parameter Name="Phai" />
+            <asp:Parameter Name="NgaySinh" />
+            <asp:Parameter Name="NoiSinh" />
+            <asp:Parameter Name="MaPhong" />
+        </InsertParameters>
+
+        <UpdateParameters>
+            <asp:Parameter Name="HoNV" />
+            <asp:Parameter Name="TenNV" />
+            <asp:Parameter Name="Phai" />
+            <asp:Parameter Name="NgaySinh" />
+            <asp:Parameter Name="NoiSinh" />
+            <asp:Parameter Name="MaPhong" />
+            <asp:Parameter Name="MaNV" />
+        </UpdateParameters>
+
+        <DeleteParameters>
+            <asp:Parameter Name="MaNV" />
+        </DeleteParameters>
+    </asp:SqlDataSource>
+
+    <asp:SqlDataSource ID="DataPhong" runat="server"
+        ConnectionString="<%$ ConnectionStrings:QLNhanVienConnectionString %>"
+        SelectCommand="SELECT MaPhong, TenPhong FROM Phong">
+    </asp:SqlDataSource>
+
+    <h1>DANH SÁCH NHÂN VIÊN</h1>
+
+    <asp:Label ID="lblMessage" runat="server" Visible="false"></asp:Label>
+
+    <!-- FORM THÊM -->
+    <div class="add-employee-form">
+        <h3>Thêm nhân viên</h3>
+
+        <div class="form-group">
+            <label>Họ NV:</label>
+            <asp:TextBox ID="txtHoNV" runat="server" />
         </div>
-    </form>
+
+        <div class="form-group">
+            <label>Tên NV:</label>
+            <asp:TextBox ID="txtTenNV" runat="server" />
+        </div>
+
+        <div class="form-group">
+            <label>Phái:</label>
+            <asp:CheckBox ID="chkPhai" runat="server" Text="Nam" />
+        </div>
+
+        <div class="form-group">
+            <label>Ngày sinh:</label>
+            <asp:TextBox ID="txtNgaySinh" runat="server" TextMode="Date" />
+        </div>
+
+        <div class="form-group">
+            <label>Nơi sinh:</label>
+            <asp:TextBox ID="txtNoiSinh" runat="server" />
+        </div>
+
+        <div class="form-group">
+            <label>Phòng ban:</label>
+            <asp:DropDownList ID="ddlMaPhong" runat="server"
+                DataSourceID="DataPhong"
+                DataTextField="TenPhong"
+                DataValueField="MaPhong">
+                <asp:ListItem Value="">-- Chọn phòng --</asp:ListItem>
+            </asp:DropDownList>
+        </div>
+
+        <asp:Button ID="btnAdd" runat="server" Text="Thêm nhân viên" OnClick="btnAdd_Click" Height="40px" style="color: #FFFFFF; font-weight: 700; background-color: #3399FF" Width="137px" BorderStyle="None" />
+    </div>
+
+    <!-- GRID -->
+    <asp:GridView ID="dgvNhanVien" runat="server"
+        DataSourceID="DataqlNhanVien"
+        AutoGenerateColumns="False"
+        CssClass="gv-style"
+        DataKeyNames="MaNV"
+        AllowPaging="True"
+        PageSize="10"
+        OnPageIndexChanging="dgvNhanVien_PageIndexChanging"
+        OnRowEditing="dgvNhanVien_RowEditing"
+        OnRowCancelingEdit="dgvNhanVien_RowCancelingEdit"
+        OnRowUpdating="dgvNhanVien_RowUpdating"
+        OnRowDeleting="dgvNhanVien_RowDeleting"
+        OnRowDataBound="dgvNhanVien_RowDataBound">
+
+        <Columns>
+            <asp:BoundField DataField="MaNV" HeaderText="Mã NV" ReadOnly="True" />
+            <asp:BoundField DataField="HoNV" HeaderText="Họ NV" />
+            <asp:BoundField DataField="TenNV" HeaderText="Tên NV" />
+
+            <asp:TemplateField HeaderText="Giới tính">
+                <ItemTemplate>
+                    <%# Convert.ToBoolean(Eval("Phai")) ? "Nam" : "Nữ" %>
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:CheckBox ID="chkEditPhai" runat="server"
+                        Checked='<%# Bind("Phai") %>' Text="Nam" />
+                </EditItemTemplate>
+            </asp:TemplateField>
+
+            <asp:BoundField DataField="NgaySinh" HeaderText="Ngày sinh" DataFormatString="{0:yyyy-MM-dd}" />
+            <asp:BoundField DataField="NoiSinh" HeaderText="Nơi sinh" />
+
+            <asp:TemplateField HeaderText="Phòng ban">
+                <ItemTemplate>
+                    <%# Eval("MaPhong") %>
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:DropDownList ID="ddlEditPhong" runat="server"
+                        DataSourceID="DataPhong"
+                        DataTextField="TenPhong"
+                        DataValueField="MaPhong"
+                        SelectedValue='<%# Bind("MaPhong") %>' />
+                </EditItemTemplate>
+            </asp:TemplateField>
+
+            <asp:CommandField ShowEditButton="True" ButtonType="Link" EditText="Sửa"/>
+            <asp:CommandField ShowDeleteButton="True" ButtonType="Link" DeleteText="Xóa"/>
+        </Columns>
+    </asp:GridView>
+
+    <div class="link-quay-lai">
+    <a href="Default.aspx">Quay lại trang chủ</a>
+</div>
+</form>
 </body>
 </html>

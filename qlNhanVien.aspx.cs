@@ -1,120 +1,150 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Data; // Cần thiết cho các thao tác CSDL
 
 namespace lab_CSDL
 {
-    public partial class qlNhanVien : System.Web.UI.Page
+    public partial class qlNhanVien : Page
     {
-        protected void Page_Load(object sender, EventArgs e)
+
+        protected void btnAdd_Click(object sender, EventArgs e)
         {
-            if (!IsPostBack)
-            {
-                GridView1.DataBind();
-            }
-        }
-
-        // Sự kiện xảy ra khi nhấn nút 'Edit'
-        protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
-        {
-            GridView1.EditIndex = e.NewEditIndex;
-            GridView1.DataBind();
-        }
-
-        // Sự kiện xảy ra khi nhấn nút 'Cancel' trong Edit mode
-        protected void GridView1_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
-        {
-            GridView1.EditIndex = -1;
-            GridView1.DataBind();
-        }
-
-        // Sự kiện xảy ra khi nhấn nút 'Update' trong Edit mode
-        protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
-        {
-            // Bước 1: Ngăn GridView tự động xử lý (để ta tự gọi DataqlNhanVien.Update())
-            e.Cancel = true;
-
-            // Bước 2: Thiết lập tham số khóa chính cho SqlDataSource
-            // Giá trị khóa chính (MaNV) luôn nằm trong OldValues.
-            DataqlNhanVien.UpdateParameters["MaNV"].DefaultValue = GridView1.DataKeys[e.RowIndex].Value.ToString();
-
-            // Bước 3: Thiết lập các giá trị mới từ GridView vào UpdateParameters
-            // Lặp qua các BoundField để lấy giá trị mới.
-            // Do ta dùng BoundField và CheckBoxField, các giá trị được tự động thu thập trong e.NewValues.
-            // Tuy nhiên, vì ta đã đặt e.Cancel = true, ta cần lấy các giá trị từ e.NewValues và đặt vào UpdateParameters:
-
-            // Lấy giá trị mới từ GridView và đưa vào SqlDataSource
-            DataqlNhanVien.UpdateParameters["HoNV"].DefaultValue = e.NewValues["HoNV"].ToString();
-            DataqlNhanVien.UpdateParameters["TenNV"].DefaultValue = e.NewValues["TenNV"].ToString();
-
-            // Xử lý CheckBoxField (Phai). Giá trị thường là "on" hoặc "off" trong Web Forms hoặc Boolean
-            if (e.NewValues["Phai"] != null)
-            {
-                DataqlNhanVien.UpdateParameters["Phai"].DefaultValue = e.NewValues["Phai"].ToString();
-            }
-
-            DataqlNhanVien.UpdateParameters["NgaySinh"].DefaultValue = e.NewValues["NgaySinh"].ToString();
-            DataqlNhanVien.UpdateParameters["NoiSinh"].DefaultValue = e.NewValues["NoiSinh"].ToString();
-            DataqlNhanVien.UpdateParameters["MaPhong"].DefaultValue = e.NewValues["MaPhong"].ToString();
-
             try
             {
-                int rowsAffected = DataqlNhanVien.Update();
-                if (rowsAffected > 0)
+                if (string.IsNullOrWhiteSpace(txtHoNV.Text)
+                    || string.IsNullOrWhiteSpace(txtTenNV.Text)
+                    || string.IsNullOrWhiteSpace(txtNgaySinh.Text)
+                    || string.IsNullOrWhiteSpace(txtNoiSinh.Text)
+                    || string.IsNullOrEmpty(ddlMaPhong.SelectedValue))
                 {
-                    // Thoát khỏi Edit mode
-                    GridView1.EditIndex = -1;
-                    // Nạp lại dữ liệu để cập nhật hiển thị
-                    GridView1.DataBind();
+                    ShowMessage("❌ Vui lòng nhập đầy đủ thông tin!", false);
+                    return;
                 }
+
+                DateTime ns = DateTime.Parse(txtNgaySinh.Text);
+                if (ns >= DateTime.Today)
+                {
+                    ShowMessage("❌ Ngày sinh phải nhỏ hơn ngày hiện tại!", false);
+                    return;
+                }
+
+                DataqlNhanVien.InsertParameters["HoNV"].DefaultValue = txtHoNV.Text;
+                DataqlNhanVien.InsertParameters["TenNV"].DefaultValue = txtTenNV.Text;
+                DataqlNhanVien.InsertParameters["Phai"].DefaultValue = chkPhai.Checked.ToString();
+                DataqlNhanVien.InsertParameters["NgaySinh"].DefaultValue = txtNgaySinh.Text;
+                DataqlNhanVien.InsertParameters["NoiSinh"].DefaultValue = txtNoiSinh.Text;
+                DataqlNhanVien.InsertParameters["MaPhong"].DefaultValue = ddlMaPhong.SelectedValue;
+
+                DataqlNhanVien.Insert();
+                dgvNhanVien.DataBind();
+
+                ShowMessage("✔ Thêm nhân viên thành công!", true);
+                ClearForm();
             }
-            catch (Exception ex)
+            catch (SqlException)
             {
-                // Xử lý lỗi CSDL (ví dụ: định dạng ngày tháng sai, ràng buộc khóa ngoại)
-                Response.Write("<div style='color: red; font-weight: bold; padding: 10px;'>Lỗi cập nhật: " + Server.HtmlEncode(ex.Message) + "</div>");
-                // Giữ lại Edit mode nếu muốn người dùng sửa lỗi
-                e.Cancel = false;
+                ShowMessage("❌ Lỗi dữ liệu SQL!", false);
             }
         }
 
-        // Sự kiện xảy ra khi nhấn nút 'Delete'
-        protected void GridView1_RowDeleting(object sender, GridViewDeleteEventArgs e)
+        private void ClearForm()
         {
-            // Bước 1: Ngăn GridView tự động xử lý (để ta tự gọi Delete())
-            e.Cancel = true;
+            txtHoNV.Text = string.Empty;
+            txtTenNV.Text = string.Empty;
+            txtNgaySinh.Text = string.Empty;
+            txtNoiSinh.Text = string.Empty;
 
-            // Bước 2: Lấy MaNV từ DataKeys (Đây là khóa chính để xóa)
-            int maNV = Convert.ToInt32(GridView1.DataKeys[e.RowIndex].Value);
+            chkPhai.Checked = false;
 
-            // Bước 3: Thiết lập tham số khóa chính cho SqlDataSource
-            DataqlNhanVien.DeleteParameters["MaNV"].DefaultValue = maNV.ToString();
+            if (ddlMaPhong.Items.Count > 0)
+                ddlMaPhong.SelectedIndex = 0;
 
+            lblMessage.Visible = false;
+        }
+
+        protected void dgvNhanVien_RowEditing(object sender, GridViewEditEventArgs e)
+        {
+            dgvNhanVien.EditIndex = e.NewEditIndex;
+            dgvNhanVien.DataBind();
+        }
+
+        protected void dgvNhanVien_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+        {
+            dgvNhanVien.EditIndex = -1;
+            dgvNhanVien.DataBind();
+        }
+
+        protected void dgvNhanVien_RowUpdating(object sender, GridViewUpdateEventArgs e)
+        {
             try
             {
-                // Bước 4: Gọi lệnh Delete của SqlDataSource
-                int rowsAffected = DataqlNhanVien.Delete();
+                GridViewRow row = dgvNhanVien.Rows[e.RowIndex];
+                DateTime ns = DateTime.Parse(((TextBox)row.Cells[4].Controls[0]).Text);
 
-                if (rowsAffected > 0)
+                if (ns >= DateTime.Today)
                 {
-                    // Bước 5: Nạp lại dữ liệu để GridView hiển thị danh sách mới
-                    GridView1.DataBind();
-                    // Có thể thêm mã thông báo "Xóa thành công" ở đây
+                    ShowMessage("❌ Ngày sinh không hợp lệ!", false);
+                    return;
+                }
+
+                CheckBox chk = (CheckBox)row.FindControl("chkEditPhai");
+                DropDownList ddl = (DropDownList)row.FindControl("ddlEditPhong");
+
+                DataqlNhanVien.UpdateParameters["Phai"].DefaultValue = chk.Checked.ToString();
+                DataqlNhanVien.UpdateParameters["MaPhong"].DefaultValue = ddl.SelectedValue;
+
+                DataqlNhanVien.Update();
+                dgvNhanVien.EditIndex = -1;
+                dgvNhanVien.DataBind();
+
+                ShowMessage("✔ Cập nhật thành công!", true);
+            }
+            catch
+            {
+                ShowMessage("❌ Lỗi cập nhật dữ liệu!", false);
+            }
+        }
+
+        protected void dgvNhanVien_RowDeleting(object sender, GridViewDeleteEventArgs e)
+        {
+            DataqlNhanVien.DeleteParameters["MaNV"].DefaultValue =
+                dgvNhanVien.DataKeys[e.RowIndex].Value.ToString();
+            DataqlNhanVien.Delete();
+            dgvNhanVien.DataBind();
+
+            ShowMessage("✔ Đã xóa nhân viên!", true);
+        }
+
+        protected void dgvNhanVien_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow && dgvNhanVien.EditIndex == -1)
+            {
+                foreach (Control c in e.Row.Cells[e.Row.Cells.Count - 1].Controls)
+                {
+                    if (c is LinkButton btn && btn.CommandName == "Delete")
+                    {
+                        btn.OnClientClick = "return ConfirmDelete();";
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                // Bước 6: Xử lý lỗi CSDL (ví dụ: ràng buộc khóa ngoại)
-                Response.Write("<div style='color: red; font-weight: bold; padding: 10px;'>Lỗi xóa: " + Server.HtmlEncode(ex.Message) + "</div>");
-            }
         }
 
-        protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+
+
+        void ShowMessage(string msg, bool success)
         {
-            // Không xử lý gì ở đây nếu không dùng
+            lblMessage.Text = msg;
+            lblMessage.CssClass = success ? "message success" : "message error";
+            lblMessage.Visible = true;
         }
+
+        protected void dgvNhanVien_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            dgvNhanVien.PageIndex = e.NewPageIndex;
+            dgvNhanVien.EditIndex = -1; // thoát chế độ sửa nếu đang edit
+            dgvNhanVien.DataBind();
+        }
+
     }
 }

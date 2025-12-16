@@ -1,45 +1,59 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
 namespace lab_CSDL
 {
-    public partial class qlPhongBan : System.Web.UI.Page
+    public partial class qlPhongBan : Page
     {
-        protected void Page_Load(object sender, EventArgs e)
+        protected void dgvNhanVien_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
-
-        }
-
-        protected void GridView1_RowDeleting(object sender, GridViewDeleteEventArgs e)
-        {
-
-            e.Cancel = true;
-
-            int maNV = Convert.ToInt32(GridView1.DataKeys[e.RowIndex].Value);
-
-            DataNhanVienTheoPhong.DeleteParameters["MaNV"].DefaultValue = maNV.ToString();
-
             try
             {
-                int rowsAffected = DataNhanVienTheoPhong.Delete();
+                e.Cancel = true;
 
-                if (rowsAffected > 0)
+                string maNV = dgvNhanVien.DataKeys[e.RowIndex].Value.ToString();
+                DataNhanVienTheoPhong.DeleteParameters["MaNV"].DefaultValue = maNV;
+
+                int rows = DataNhanVienTheoPhong.Delete();
+
+                if (rows > 0)
                 {
-                    GridView1.DataBind();
+                    dgvNhanVien.DataBind();
+                    ShowMessage("✔ Đã xóa nhân viên!", true);
                 }
                 else
                 {
-                    Response.Write("<div style='color: orange; font-weight: bold; padding: 10px;'>Lỗi: Không tìm thấy nhân viên để xóa.</div>");
+                    ShowMessage("❌ Không tìm thấy nhân viên để xóa!", false);
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Response.Write("<div style='color: red; font-weight: bold; padding: 10px;'>Lỗi xóa dữ liệu: " + Server.HtmlEncode(ex.Message) + "</div>");
+                ShowMessage("❌ Không thể xóa nhân viên do ràng buộc dữ liệu!", false);
             }
+        }
+
+        protected void dgvNhanVien_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                foreach (Control c in e.Row.Cells[e.Row.Cells.Count - 1].Controls)
+                {
+                    if (c is LinkButton btn && btn.CommandName == "Delete")
+                    {
+                        btn.OnClientClick = "return ConfirmDelete();";
+                    }
+                }
+            }
+        }
+
+
+
+        void ShowMessage(string msg, bool success)
+        {
+            lblMessage.Text = msg;
+            lblMessage.CssClass = success ? "message success" : "message error";
+            lblMessage.Visible = true;
         }
     }
 }
